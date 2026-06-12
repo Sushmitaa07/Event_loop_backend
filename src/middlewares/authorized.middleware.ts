@@ -47,7 +47,8 @@ export const adminMiddleware = async (
         if (!req.user) {
             throw new HttpException(401, 'Unauthorized no user info');
         }
-        if (req.user.role !== 'admin') {
+        // role was removed from user model; ensure role exists and equals 'admin'
+        if (!('role' in req.user) || (req.user as any).role !== 'admin') {
             throw new HttpException(403, 'Forbidden not admin');
         }
         return next();

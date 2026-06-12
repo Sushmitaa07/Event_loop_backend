@@ -15,10 +15,7 @@ export class UserService {
         if (existingEmail) {
             throw new HttpException(400, "Email already exists");
         }
-        const existingUsername = await userRepository.getUserByUsername(userData.username);
-        if (existingUsername) {
-            throw new HttpException(400, "Username already exists");
-        }
+        // no authId uniqueness check; rely on email uniqueness
         // hash password
         const hashedPassword = await bycryptjs.hash(userData.password, 10);
         userData.password = hashedPassword;
@@ -39,7 +36,7 @@ export class UserService {
             throw new HttpException(400, "Invalid password");
         }
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role },
+            { id: user._id, fullName: user.fullName, email: user.email },
             SECRET_KEY,
             { expiresIn: "30d" }
         );

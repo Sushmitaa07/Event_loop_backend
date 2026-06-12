@@ -9,12 +9,11 @@ export interface IUser extends UserType, Document {
 }
 const UserMongoSchema: Schema = new Schema<IUser>(
     {
-        firstName: { type: String, required: true },
-        lastName: { type: String, required: true },
+        fullName: { type: String, required: true },
         email: { type: String, required: true, unique: true },
-        username: { type: String, required: true, unique: true },
         password: { type: String, required: true },
-        role: { type: String, enum: ["admin", "user"], default: "user" }
+        gender: { type: String, enum: ["male", "female", "other"], default: "other" },
+        contactNumber: { type: String }
     },
     {
         timestamps: true // createdAt and updatedAt will be automatically added and managed by mongoose
