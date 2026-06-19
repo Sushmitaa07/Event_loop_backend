@@ -13,7 +13,8 @@ const UserMongoSchema: Schema = new Schema<IUser>(
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         gender: { type: String, enum: ["male", "female", "other"], default: "other" },
-        contactNumber: { type: String }
+        contactNumber: { type: String },
+        profileImage: { type: String, default: null }
     },
     {
         timestamps: true // createdAt and updatedAt will be automatically added and managed by mongoose

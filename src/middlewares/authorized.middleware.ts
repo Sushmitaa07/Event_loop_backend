@@ -8,11 +8,15 @@ import { ApiResponseHelper } from '../utils/apihelper.util';
 
 declare global {
     namespace Express {
-        interface Request {w
+        interface Request {
             user?: Record<string, any> | IUser
         }
     }
 } // adding tag (user) to request, can use req.user
+
+// Convenience alias so controllers can type request handlers as AuthRequest
+export type AuthRequest = Request;
+
 let userRepository = new UserMongoRepository();
 export const authorizedMiddleware =
     async (req: Request, res: Response, next: NextFunction) => {
@@ -39,6 +43,9 @@ export const authorizedMiddleware =
             );
         }
     }
+
+// Alias matching common naming convention used elsewhere in routes
+export const authenticateUser = authorizedMiddleware;
 
 export const adminMiddleware = async (
     req: Request, res: Response, next: NextFunction

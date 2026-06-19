@@ -1,8 +1,10 @@
 import express, { Application, NextFunction, Request, Response } from "express";
+import path from "path";
 import userRouter from "./routes/user.route";
 import { HttpException } from "./exceptions/http-exception";
 import { ApiResponseHelper } from "./utils/apihelper.util";
 import cors from "cors";
+import { PORT } from "./configs/constant";
 
 const app: Application = express();
 
@@ -12,15 +14,21 @@ app.use(express.urlencoded({ extended: true })); // x-www-form-urlencoded
 // CORS
 app.use(cors());
 
-// AUTH ROUTES (KEEP)
+// Serve uploaded profile images
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+// AUTH ROUTES (register, login)
 app.use("/api/v1/auth", userRouter);
+
+// USER ROUTES (whoami, update, update-password)
+app.use("/api/v1/users", userRouter);
 
 // HEALTH CHECK
 app.get("/", (req: Request, res: Response) => {
     return res.send("Hello, TypeScript-Express!");
 });
 
-const PORT: number = 5000;
+// use PORT from configuration (src/configs/constant.ts)
 
 // global api handler (at the last)
 app.use((req: Request, res: Response) => {

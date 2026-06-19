@@ -1,5 +1,5 @@
 import { UserMongoRepository } from "../repositories/user.repository";
-import { CreateUserDTO, LoginUserDTO } from "../dtos/user.dto";
+import { CreateUserDTO, LoginUserDTO, UpdatePasswordDTO, UpdateProfileDTO } from "../dtos/user.dto";
 import { IUser } from "../models/user.model";
 import { HttpException } from "../exceptions/http-exception";
 import bycryptjs from "bcryptjs";
@@ -8,29 +8,50 @@ import { SECRET_KEY } from "../configs/constant";
 
 const userRepository = new UserMongoRepository();
 
+export type PublicUser = {
+    id: string;
+    fullName: string;
+    email: string;
+    contactNumber?: string;
+    gender?: string;
+    profileImage?: string | null;
+    createdAt?: Date;
+    updatedAt?: Date;
+};
+
 export class UserService {
-    async createUser(userData: CreateUserDTO): Promise<IUser> {
-        // validation
+    private toPublicUser(user: IUser): PublicUser {
+        return {
+            id: user._id.toString(),
+            fullName: user.fullName,
+            email: user.email,
+            contactNumber: user.contactNumber,
+            gender: user.gender,
+            profileImage: user.profileImage || null,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        };
+    }
+
+    async createUser(userData: CreateUserDTO): Promise<PublicUser> {
         const existingEmail = await userRepository.getUserByEmail(userData.email);
         if (existingEmail) {
             throw new HttpException(400, "Email already exists");
         }
-        // no authId uniqueness check; rely on email uniqueness
-        // hash password
         const hashedPassword = await bycryptjs.hash(userData.password, 10);
         userData.password = hashedPassword;
         const user = await userRepository.createUser(userData);
-        return user;
+        return this.toPublicUser(user);
     }
 
-    async loginUser(loginData: LoginUserDTO){
+    async loginUser(loginData: LoginUserDTO) {
         const user = await userRepository.getUserByEmail(loginData.email);
         if (!user) {
             throw new HttpException(400, "Invalid email");
         }
         const isPasswordValid = await bycryptjs.compare(
-            loginData.password,  // client password
-            user.password // database password
+            loginData.password,
+            user.password
         );
         if (!isPasswordValid) {
             throw new HttpException(400, "Invalid password");
@@ -40,6 +61,44 @@ export class UserService {
             SECRET_KEY,
             { expiresIn: "30d" }
         );
-        return { user, token }
+        
+        console.log("Token:", token);
+        return { user: this.toPublicUser(user), token };
+    }
+
+    async getCurrentUser(userId: string): Promise<PublicUser> {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpException(404, "User not found");
+        }
+        return this.toPublicUser(user);
+    }
+
+    async updateProfile(userId: string, profileData: UpdateProfileDTO): Promise<PublicUser> {
+        const updatedUser = await userRepository.update(userId, profileData);
+        if (!updatedUser) {
+            throw new HttpException(404, "User not found");
+        }
+        return this.toPublicUser(updatedUser);
+    }
+
+    async updatePassword(userId: string, passwordData: UpdatePasswordDTO): Promise<PublicUser> {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpException(404, "User not found");
+        }
+        const isPasswordValid = await bycryptjs.compare(
+            passwordData.currentPassword,
+            user.password
+        );
+        if (!isPasswordValid) {
+            throw new HttpException(400, "Current password is incorrect");
+        }
+        const hashedPassword = await bycryptjs.hash(passwordData.newPassword, 10);
+        const updatedUser = await userRepository.update(userId, { password: hashedPassword });
+        if (!updatedUser) {
+            throw new HttpException(404, "User not found");
+        }
+        return this.toPublicUser(updatedUser);
     }
 }

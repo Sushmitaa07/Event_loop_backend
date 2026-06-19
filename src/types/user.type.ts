@@ -5,6 +5,7 @@ export const UserSchema = z.object({
     contactNumber: z.string().optional(),
     password: z.string().min(6, "Password must be at least 6 characters long"),
     gender: z.enum(["male", "female", "other"]).optional(),
+    profileImage: z.string().nullable().optional(),
     // role removed
 });
 export type UserType = z.infer<typeof UserSchema>;
