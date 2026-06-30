@@ -8,6 +8,8 @@ export const MONGODB_URL: string = process.env.MONGODB_URL || "mongodb://localho
 export const SECRET_KEY: string =
     process.env.SECRET_KEY || "merosecretkey";
 
+
+
 // same as 
 // export {
 //     PORT,

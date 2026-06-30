@@ -1,6 +1,7 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 import path from "path";
 import userRouter from "./routes/user.route";
+import adminUserRouter from "./routes/admin/user.route";
 import { HttpException } from "./exceptions/http-exception";
 import { ApiResponseHelper } from "./utils/apihelper.util";
 import cors from "cors";
@@ -22,6 +23,9 @@ app.use("/api/v1/auth", userRouter);
 
 // USER ROUTES (whoami, update, update-password)
 app.use("/api/v1/users", userRouter);
+
+// ADMIN USER MANAGEMENT ROUTES (CRUD + pagination/search, admin only)
+app.use("/api/v1/admin/users", adminUserRouter);
 
 // HEALTH CHECK
 app.get("/", (req: Request, res: Response) => {

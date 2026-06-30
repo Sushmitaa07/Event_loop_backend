@@ -60,4 +60,10 @@ userRouter.patch(
   userController.updatePassword
 );
 
+userRouter.post(
+  "/promote-admin",
+  authenticateUser,
+  userController.promoteToAdmin
+);
+
 export default userRouter;

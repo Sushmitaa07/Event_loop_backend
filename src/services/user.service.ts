@@ -1,5 +1,5 @@
-import { UserMongoRepository } from "../repositories/user.repository";
-import { CreateUserDTO, LoginUserDTO, UpdatePasswordDTO, UpdateProfileDTO } from "../dtos/user.dto";
+import { UserMongoRepository, GetAllPaginatedParams } from "../repositories/user.repository";
+import { CreateUserDTO, LoginUserDTO, UpdatePasswordDTO, UpdateProfileDTO, AdminCreateUserDTO, AdminUpdateUserDTO } from "../dtos/user.dto";
 import { IUser } from "../models/user.model";
 import { HttpException } from "../exceptions/http-exception";
 import bycryptjs from "bcryptjs";
@@ -15,6 +15,7 @@ export type PublicUser = {
     contactNumber?: string;
     gender?: string;
     profileImage?: string | null;
+    role?: string;
     createdAt?: Date;
     updatedAt?: Date;
 };
@@ -28,6 +29,7 @@ export class UserService {
             contactNumber: user.contactNumber,
             gender: user.gender,
             profileImage: user.profileImage || null,
+            role: (user as any).role,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };
@@ -100,5 +102,78 @@ export class UserService {
             throw new HttpException(404, "User not found");
         }
         return this.toPublicUser(updatedUser);
+    }
+
+    async updateUserRole(userId: string, role: "admin" | "user"): Promise<PublicUser> {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpException(404, "User not found");
+        }
+        const updatedUser = await userRepository.update(userId, { role });
+        if (!updatedUser) {
+            throw new HttpException(404, "User not found");
+        }
+        return this.toPublicUser(updatedUser);
+    }
+
+    // ----- Admin User Management -----
+
+    async adminGetAllUsers(params: GetAllPaginatedParams) {
+        const { items, total } = await userRepository.getAllPaginated(params);
+        return {
+            items: items.map((u) => this.toPublicUser(u)),
+            total,
+        };
+    }
+
+    async adminGetUserById(id: string): Promise<PublicUser> {
+        const user = await userRepository.getUserById(id);
+        if (!user) {
+            throw new HttpException(404, "User not found");
+        }
+        return this.toPublicUser(user);
+    }
+
+    async adminCreateUser(userData: AdminCreateUserDTO): Promise<PublicUser> {
+        const existingEmail = await userRepository.getUserByEmail(userData.email);
+        if (existingEmail) {
+            throw new HttpException(400, "Email already exists");
+        }
+        const hashedPassword = await bycryptjs.hash(userData.password, 10);
+        const user = await userRepository.createUser({
+            ...userData,
+            password: hashedPassword,
+        });
+        return this.toPublicUser(user);
+    }
+
+    async adminUpdateUser(id: string, userData: AdminUpdateUserDTO): Promise<PublicUser> {
+        const existing = await userRepository.getUserById(id);
+        if (!existing) {
+            throw new HttpException(404, "User not found");
+        }
+        if (userData.email && userData.email !== existing.email) {
+            const existingEmail = await userRepository.getUserByEmail(userData.email);
+            if (existingEmail) {
+                throw new HttpException(400, "Email already exists");
+            }
+        }
+        const payload: Record<string, any> = { ...userData };
+        if (userData.password) {
+            payload.password = await bycryptjs.hash(userData.password, 10);
+        }
+        const updatedUser = await userRepository.update(id, payload);
+        if (!updatedUser) {
+            throw new HttpException(404, "User not found");
+        }
+        return this.toPublicUser(updatedUser);
+    }
+
+    async adminDeleteUser(id: string): Promise<boolean> {
+        const existing = await userRepository.getUserById(id);
+        if (!existing) {
+            throw new HttpException(404, "User not found");
+        }
+        return userRepository.delete(id);
     }
 }

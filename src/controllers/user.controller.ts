@@ -113,4 +113,21 @@ export class UserController {
             );
         }
     }
+
+    async promoteToAdmin(req: AuthRequest, res: Response) {
+        try {
+            const { userId } = req.body;
+            if (!userId) {
+                return ApiResponseHelper.error(res, "User ID is required", 400);
+            }
+            const user = await userService.updateUserRole(userId, "admin");
+            return ApiResponseHelper.success(res, user, "User promoted to admin successfully");
+        } catch (error: Error | any | unknown) {
+            return ApiResponseHelper.error(
+                res,
+                error.message || "Internal Server Error",
+                error.status || 500
+            );
+        }
+    }
 }
